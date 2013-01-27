@@ -1,0 +1,15 @@
+{
+  "name": "Sliding Puzzle",
+  "description": "A simple Sliding puzzle game",
+  "launch_path": "/index.html",
+  "icons": {
+    "60": "/icon-60.png"
+  },
+  "developer": {
+    "name": "Mathieu Pillard",
+    "url": "http://virgule.net/"
+  },
+  "default_locale": "en",
+  "orientation": "portrait-primary",
+  "fullscreen": "true"
+}
