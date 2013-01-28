@@ -8,3 +8,5 @@ If for some reason you'd like to test in the Firefox OS simulator, don't use the
 stable version, it has some issues  preventing transitions to work properly. 
 It was tested and working on the unstable version, as well as real Firefox OS
 devices.
+
+You can see a demo over at http://virgule.net/sliding-puzzle/
