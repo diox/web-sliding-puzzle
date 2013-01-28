@@ -144,8 +144,10 @@ Tile.prototype.reposition = function() {
     function realReposition(e) {
         e.stopPropagation();
         this.classList.remove('peek');
+        style.webkitTransform = 'translateX(' + x + 'px) translateY(' + y + 'px)';
         style.transform = 'translateX(' + x + 'px) translateY(' + y + 'px)';
         this.removeEventListener('transitionend', realReposition);
+        this.removeEventListener('webkitTransitionEnd', realReposition);
     }
 
     var style = this.elm.style;
@@ -155,10 +157,12 @@ Tile.prototype.reposition = function() {
     // move 1% in the right direction before doing the real move, to avoid
     // ugly flickering with Firefox OS
     this.elm.addEventListener('transitionend', realReposition);
+    this.elm.addEventListener('webkitTransitionEnd', realReposition);
     var oldX = this.originalX * (puzzle.width / puzzle.tilesCount);
     var oldY = this.originalY * (puzzle.height / puzzle.tilesCount);
     var peekX = Math.round(oldX + (x - oldX) / 100);
     var peekY = Math.round(oldY + (y - oldY) / 100);
+    style.webkitTransform = 'translateX(' + peekX + 'px) translateY(' + peekY + 'px)';
     style.transform = 'translateX(' + peekX + 'px) translateY(' + peekY + 'px)';
 };
 
@@ -180,10 +184,7 @@ puzzle.init = function(file) {
 };
 
 puzzle.initialDraw = function() {
-    puzzle.redraw();
-    puzzle.shuffle();
-    puzzle.moving = 0;
-    document.body.addEventListener('transitionend', function(e) {
+    function transitionEnd(e) {
         if (e.target.tagName.toLowerCase() !== 'canvas') {
             return;
         }
@@ -194,7 +195,12 @@ puzzle.initialDraw = function() {
             document.body.classList.remove('moving');
             puzzle.checkSolved();
         }
-    });
+    }
+    puzzle.redraw();
+    puzzle.shuffle();
+    puzzle.moving = 0;
+    document.body.addEventListener('transitionend', transitionEnd);
+    document.body.addEventListener('webkitTransitionEnd', transitionEnd);
     document.defaultView.addEventListener('resize', puzzle.redraw);
     // FIXME: is "resize" enough ?
     //document.defaultView.addEventListener("deviceorientation", puzzle.redraw, true);
