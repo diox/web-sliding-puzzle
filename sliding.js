@@ -26,9 +26,9 @@ function init() {
             name: "pick",
             data: {
                 type: ["image/png", "image/jpg", "image/jpeg"]
-             }
+            }
         });
-        pick.onsuccess = function() { 
+        pick.onsuccess = function() {
             // Create image and set the returned blob as the src
             puzzle.init(this.result.blob);
             };
