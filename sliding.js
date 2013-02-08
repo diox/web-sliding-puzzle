@@ -211,17 +211,30 @@ puzzle.redraw = function() {
     var img = puzzle.img;
     var canvas = document.createElement('canvas');
     var ctx = canvas.getContext('2d');
+    var puzzleOrientation = null, imageOrientation = null;
 
     puzzle.height = window.innerHeight;
     puzzle.width = window.innerWidth;
-
     canvas.width = puzzle.width;
-    canvas.height = puzzle.height; 
+    canvas.height = puzzle.height;
     canvas.className = 'debug';
-
-    // FIXME: stretching isn't such a bad thing, but we should at least 
-    // handle image orientation
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    if (puzzle.width !== puzzle.height) {
+        puzzleOrientation = (puzzle.width / puzzle.height) > 1;
+    }
+    if (img.width !== img.height) {
+        imageOrientation = (img.width / img.height) > 1;
+    }
+    if (puzzleOrientation !== null && imageOrientation !== null &&
+        imageOrientation !== puzzleOrientation) {
+        // If image orientation and puzzle orientation differ - and we are not
+        // drawing to/from a square - we need to rotate the canvas 90 deg to
+        // display the image.
+        ctx.rotate(90 * Math.PI / 180);
+        ctx.translate(0, -canvas.width);
+        ctx.drawImage(img, 0, 0, canvas.height, canvas.width);
+    } else {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
     //document.body.appendChild(canvas); // for debugging
 
     for (var i = 0; i < puzzle.tiles.length; i++) {
