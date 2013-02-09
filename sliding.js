@@ -15,10 +15,16 @@ function init() {
     var label = document.getElementById('file_label');
     if (elm.type !== 'file') {
         /* For browsers without input=file, i.e. Firefox OS, we show the 
-           Web Activities "pick", restricting to images. We should probably do
-           the test the other way around, so that browsers without input=file
-           and without MozActvity don't throw errors, but Firefox Desktop has
-           some issues when we test for MozActivity presence :( */
+           Web Activities "pick", restricting to images.
+
+           We should probably do the test the other way around, testing
+           MozActivity presence first, so that browsers without input=file
+           and without MozActvity don't throw errors, but testing for
+           MozActivity presence doesn't garantee us it will work to pick images.
+           ('MozActivity' in window is true in FF Desktop, but unusable, and we
+            can only know that too late in the process, after the user has
+            already clicked the button)
+        */
         elm.type = "button";
         elm.value = label.textContent;
         elm.addEventListener('click', function(e) {
