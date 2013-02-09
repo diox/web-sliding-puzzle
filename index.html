@@ -30,16 +30,18 @@
   }
   h1 span {
     background: #333;
+    color: #FFF;
     padding: 0.2em;
     display: inline-block;
     position: relative;
-    outline: 1px solid #222;
+    border: 2px solid #111;
   }
   span.s1 {
     background: #444;
     padding-right: 2.2em;
   }
   span.s1::after {
+    border-left: 2px solid #111;
     content: " ";
     background: #666;
     padding: 0;
@@ -49,12 +51,21 @@
     position: absolute;
     top: 0;
     right: 0;
+    overflow: hidden;
+    -moz-box-sizing: border-box;
+    -o-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    padding: 0.2em;
   }
   span.s2 {
+    position: relative;
+    top: -2px;
     padding-left: 2.2em;
     margin-left: 1.6em;
   }
   span.s2::before {
+    border-right: 2px solid #111;
     content: " ";
     background: #555;
     padding: 0;
@@ -63,7 +74,14 @@
     display: block;
     position: absolute;
     top: 0;
-    left: 0;  }
+    left: 0; 
+    overflow: hidden;
+    -moz-box-sizing: border-box;
+    -o-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    padding: 0.2em;
+  }
   .tile {
     position: absolute;
     -webkit-transition: -webkit-transform 0.3s ease-out;
@@ -90,7 +108,7 @@
     z-index: 42;
     background: #111;
   }
-  input {
+  input[type=file] {
     margin-top: 1em;
   }
   button, input {
@@ -112,7 +130,7 @@
   <form id="gui" class="hidden">
     <h1><span class="s1">Sliding</span><span class="s2">Puzzle</span></h1>
     <label for="file" id="file_label">Pick an image to start…</label>
-    <br /><input type="file" id="file" />
+    <br /><input type="file" id="file" size="10" />
   </form>
 </body>
 </html>
