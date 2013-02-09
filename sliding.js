@@ -12,6 +12,7 @@ var puzzle = {
 
 function init() {
     var elm = document.getElementById('file');
+    var label = document.getElementById('file_label');
     if (elm.type !== 'file') {
         /* For browsers without input=file, i.e. Firefox OS, we show the 
            Web Activities "pick", restricting to images. We should probably do
@@ -19,20 +20,21 @@ function init() {
            and without MozActvity don't throw errors, but Firefox Desktop has
            some issues when we test for MozActivity presence :( */
         elm.type = "button";
-        elm.value = "Choose";
+        elm.value = label.textContent;
         elm.addEventListener('click', function(e) {
-        e.preventDefault();
-        var pick = new MozActivity({
-            name: "pick",
-            data: {
-                type: ["image/png", "image/jpg", "image/jpeg"]
-            }
-        });
-        pick.onsuccess = function() {
-            // Create image and set the returned blob as the src
-            puzzle.init(this.result.blob);
+            e.preventDefault();
+            var pick = new MozActivity({
+                name: "pick",
+                data: {
+                    type: ["image/png", "image/jpg", "image/jpeg"]
+                }
+            });
+            pick.onsuccess = function() {
+                // Create image and set the returned blob as the src
+                puzzle.init(this.result.blob);
             };
         });
+        label.style.display = 'none';
         document.getElementById('gui').appendChild(elm);
     } else {
         elm.addEventListener('change', function() {

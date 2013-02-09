@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Web Sliding Puzzle</title>
+  <title>Sliding Puzzle</title>
   <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <style>
   html, body {
@@ -18,10 +18,56 @@
     height: 100%;
     position: absolute;
   }
+  h1 {
+    font: 2.5rem/4.8rem;
+    font-weight: bold;
+    letter-spacing: -0.05em;
+    width: 9em;
+    margin-right: auto;
+    margin-left: auto;
+    padding: 0 1em 0 0;
+    margin: 2em auto;
+  }
+  h1 span {
+    background: #333;
+    padding: 0.2em;
+    display: inline-block;
+    position: relative;
+    outline: 1px solid #222;
+  }
+  span.s1 {
+    background: #444;
+    padding-right: 2.2em;
+  }
+  span.s1::after {
+    content: " ";
+    background: #666;
+    padding: 0;
+    width: 2em;
+    height: 100%;
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  span.s2 {
+    padding-left: 2.2em;
+    margin-left: 1.6em;
+  }
+  span.s2::before {
+    content: " ";
+    background: #555;
+    padding: 0;
+    width: 2em;
+    height: 100%;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;  }
   .tile {
     position: absolute;
-    -webkit-transition: -webkit-transform 0.3s ease-in;
-    transition: transform 0.3s ease-in;
+    -webkit-transition: -webkit-transform 0.3s ease-out;
+    transition: transform 0.3s ease-out;
   }
   canvas.debug {
     position: absolute;
@@ -37,13 +83,18 @@
   #gui {
     position: absolute;
     text-align: center;
-    top: 100px;
+    top: 0;
     left: 0;
+    height: 100%;
     width: 100%;
     z-index: 42;
+    background: #111;
   }
-  #gui input {
-    margin-top: 10px;
+  input {
+    margin-top: 1em;
+  }
+  button, input {
+    padding: 2em;
   }
   #gui.hidden {
     display: none;
@@ -59,7 +110,8 @@
 </head>
 <body>
   <form id="gui" class="hidden">
-    <label for="file">Choose an image:</label>
+    <h1><span class="s1">Sliding</span><span class="s2">Puzzle</span></h1>
+    <label for="file" id="file_label">Pick an image to start…</label>
     <br /><input type="file" id="file" />
   </form>
 </body>
