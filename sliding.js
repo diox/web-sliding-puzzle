@@ -93,6 +93,7 @@ Tile.prototype.eventHandler = function(e) {
         this.move();
     }
     e.preventDefault();
+    e.stopPropagation();
 };
 
 Tile.prototype.move = function() {
@@ -204,7 +205,7 @@ puzzle.init = function(file) {
 
     if (file.type.split('/')[0] == 'video') {
         puzzle.img = document.createElement('video');
-        puzzle.img.addEventListener("play", function() {
+        puzzle.img.addEventListener("loadeddata", function() {
             puzzle.img.width = puzzle.img.videoWidth;
             puzzle.img.width = puzzle.img.videoWidth;
             puzzle.initialDraw();
@@ -216,6 +217,8 @@ puzzle.init = function(file) {
             requestAnimationFrame(puzzle.redraw.bind(puzzle, false));
         }
         puzzle.img.src = window.URL.createObjectURL(file);
+        container.addEventListener('mousedown', puzzle.playPause);
+        container.addEventListener('touchstart', puzzle.playPause);
     } else {
         puzzle.redrawCallback = null;
         puzzle.img = new Image();
@@ -223,6 +226,14 @@ puzzle.init = function(file) {
         puzzle.img.src = window.URL.createObjectURL(file);
     }
 };
+
+puzzle.playPause = function() {
+    if (puzzle.img.paused) {
+        puzzle.img.play();
+    } else {
+        puzzle.img.pause();
+    }
+}
 
 puzzle.initialDraw = function(callback) {
     function transitionEnd(e) {
@@ -251,6 +262,9 @@ puzzle.initialDraw = function(callback) {
 };
 
 puzzle.initCanvas = function() {
+    if (puzzle.canvas) {
+        return puzzle.canvas;
+    }
     puzzle.canvas = document.createElement('canvas');
     puzzle.canvas.className = 'hidden';
     puzzle.canvas.id = 'finished';
