@@ -12,7 +12,7 @@
     font-family: sans-serif;
     color: #f6f6f6;
   }
-  body, #container {
+  body, #container, #finished {
     overflow: hidden;
     width: 100%;
     height: 100%;
@@ -26,7 +26,7 @@
     margin-right: auto;
     margin-left: auto;
     padding: 0 1em 0 0;
-    margin: 2em auto;
+    margin: 1.5em auto;
   }
   h1 span {
     background: #333;
@@ -87,13 +87,6 @@
     -webkit-transition: -webkit-transform 0.3s ease-out;
     transition: transform 0.3s ease-out;
   }
-  canvas.debug {
-    position: absolute;
-    left: 400px;
-    top: 0;
-    background: pink;
-    outline: 1px solid black;
-  }
   .tile.peek {
     -webkit-transition: -webkit-transform .1s ease;
     transition: transform .1s ease;
@@ -114,11 +107,8 @@
   button, input {
     padding: 2em;
   }
-  #gui.hidden {
-    display: none;
-  }
-  #container.hidden {
-    display: none;
+  .hidden {
+    display: none !important;
   }
   </style>
   <script src="sliding.js"></script>

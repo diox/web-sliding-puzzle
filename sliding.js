@@ -1,5 +1,11 @@
 "use strict";
 
+(function() {
+  var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+                              window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+  window.requestAnimationFrame = requestAnimationFrame;
+})();
+
 var puzzle = {
     tilesCount: 4,
     difficulty: 42,
@@ -7,7 +13,10 @@ var puzzle = {
     width: null,
     tiles: null,
     image: null,
-    solved: null
+    solved: null,
+    img: null,
+    canvas: null,
+    redrawCallback: null
 };
 
 function init() {
@@ -191,14 +200,31 @@ puzzle.init = function(file) {
     puzzle.width = window.innerWidth;
     puzzle.createTiles();
 
-    puzzle.img = new Image();
-    puzzle.img.onload = puzzle.initialDraw;
     document.getElementById('gui').classList.add('hidden');
 
-    puzzle.img.src = window.URL.createObjectURL(file);
+    if (file.type.split('/')[0] == 'video') {
+        puzzle.img = document.createElement('video');
+        puzzle.img.addEventListener("play", function() {
+            puzzle.img.width = puzzle.img.videoWidth;
+            puzzle.img.width = puzzle.img.videoWidth;
+            puzzle.initialDraw();
+        });
+        puzzle.img.autoplay = true;
+        puzzle.img.muted = true;
+        puzzle.img.loop = true;
+        puzzle.redrawCallback = function() {
+            requestAnimationFrame(puzzle.redraw.bind(puzzle, false));
+        }
+        puzzle.img.src = window.URL.createObjectURL(file);
+    } else {
+        puzzle.redrawCallback = null;
+        puzzle.img = new Image();
+        puzzle.img.onload = puzzle.initialDraw;
+        puzzle.img.src = window.URL.createObjectURL(file);
+    }
 };
 
-puzzle.initialDraw = function() {
+puzzle.initialDraw = function(callback) {
     function transitionEnd(e) {
         if (e.target.tagName.toLowerCase() !== 'canvas') {
             return;
@@ -211,28 +237,41 @@ puzzle.initialDraw = function() {
             puzzle.checkSolved();
         }
     }
-    puzzle.redraw();
+    puzzle.initCanvas();
+    puzzle.redraw(true);
     puzzle.shuffle();
     puzzle.moving = 0;
     document.body.addEventListener('transitionend', transitionEnd);
     document.body.addEventListener('webkitTransitionEnd', transitionEnd);
-    document.defaultView.addEventListener('resize', puzzle.redraw);
+    document.defaultView.addEventListener('resize', function() {
+        puzzle.redraw(true);
+    });
     // FIXME: is "resize" enough ?
     //document.defaultView.addEventListener("deviceorientation", puzzle.redraw, true);
 };
 
-puzzle.redraw = function() {
+puzzle.initCanvas = function() {
+    puzzle.canvas = document.createElement('canvas');
+    puzzle.canvas.className = 'hidden';
+    puzzle.canvas.id = 'finished';
+    puzzle.canvas.addEventListener('mousedown', puzzle.replayCallback);
+    puzzle.canvas.addEventListener('touchstart', puzzle.replayCallback);
+    document.body.appendChild(puzzle.canvas);
+    return puzzle.canvas;
+}
+
+puzzle.redraw = function(reposition) {
     document.body.classList.add('moving');
     var img = puzzle.img;
-    var canvas = document.createElement('canvas');
-    var ctx = canvas.getContext('2d');
-    var puzzleOrientation = null, imageOrientation = null;
+    var ctx = null, puzzleOrientation = null, imageOrientation = null;
+    var canvas = puzzle.canvas;
 
     puzzle.height = window.innerHeight;
     puzzle.width = window.innerWidth;
     canvas.width = puzzle.width;
     canvas.height = puzzle.height;
-    canvas.className = 'debug';
+    ctx = canvas.getContext('2d');
+
     if (puzzle.width !== puzzle.height) {
         puzzleOrientation = (puzzle.width / puzzle.height) > 1;
     }
@@ -250,7 +289,6 @@ puzzle.redraw = function() {
     } else {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
-    //document.body.appendChild(canvas); // for debugging
 
     for (var i = 0; i < puzzle.tiles.length; i++) {
         for (var j = 0; j < puzzle.tiles[i].length; j++) {
@@ -272,10 +310,15 @@ puzzle.redraw = function() {
             ctx = elm.getContext('2d');
             ctx.drawImage(canvas, sx, sy, sw, sh, dx, dy, dw, dh);
             ctx.strokeRect(0, 0, dw, dh);
-            tile.reposition();
+            if (reposition) {
+                tile.reposition();
+            }
         }
     }
     document.body.classList.remove('moving');
+    if (puzzle.redrawCallback) {
+        puzzle.redrawCallback();
+    }
 };
 
 puzzle.shuffle = function() {
@@ -316,14 +359,21 @@ puzzle.checkSolved = function() {
         }
     }
     if (solved) {
-        var playagain = confirm('Congratulations! Play again ?');
-        if (playagain) {
-            var container = document.getElementById('container');
-            container.parentNode.removeChild(container, true);
-            showGui();
-        }
+        document.getElementById('finished').classList.remove('hidden');
+        alert('Congratulations! Tap the image to play again');
         puzzle.solved = solved;
     }
+};
+
+puzzle.replayCallback = function() {
+    var canvas = document.getElementById('finished');
+    var container = document.getElementById('container');
+    container.parentNode.removeChild(container, true);
+    canvas.parentNode.removeChild(canvas, true);
+    if (typeof puzzle.img.pause !== 'undefined') {
+        puzzle.img.pause();
+    }
+    showGui();
 };
 
 puzzle.createTiles = function() {
