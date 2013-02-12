@@ -211,6 +211,7 @@ puzzle.init = function(file) {
             puzzle.initialDraw();
         });
         puzzle.img.autoplay = true;
+        puzzle.img.volume = 0;  // muted doesn't seem to be enough for chrome
         puzzle.img.muted = true;
         puzzle.img.loop = true;
         puzzle.redrawCallback = function() {
