@@ -16,13 +16,21 @@ var puzzle = {
     solved: null,
     img: null,
     canvas: null,
-    redrawCallback: null
+    redrawCallback: null,
+    timeStarted: null,
+    timePaused: null,
+    timeSpentPausing: null,
+    movesCount: null
 };
 
 function init() {
     var elm = document.getElementById('file');
     var label = document.getElementById('file_label');
-    if (elm.type !== 'file') {
+    var paused = document.getElementById('paused');
+    var newgame = document.getElementById('newgame');
+    var restartgame = document.getElementById('restartgame');
+
+    if (elm.type !== 'file' || 0) {
         /* For browsers without input=file, i.e. Firefox OS, we show the 
            Web Activities "pick", restricting to images.
 
@@ -50,15 +58,19 @@ function init() {
             };
         });
         label.style.display = 'none';
-        document.getElementById('gui').appendChild(elm);
     } else {
         elm.addEventListener('change', function() {
             if (this.files.length) {
                 puzzle.init(this.files[0]);
             }
         });
-        document.getElementById('gui').appendChild(elm);
     }
+    paused.addEventListener('mousedown', puzzle.hidePauseScreen);
+    paused.addEventListener('touchstart', puzzle.hidePauseScreen);
+    newgame.addEventListener('mousedown', puzzle.newGame);
+    newgame.addEventListener('touchstart', puzzle.newGame);
+    restartgame.addEventListener('mousedown', puzzle.restartGame);
+    restartgame.addEventListener('touchstart', puzzle.restartGame);
     showGui();
 }
 
@@ -90,16 +102,23 @@ Tile.prototype.debug = function(delay) {
 
 Tile.prototype.eventHandler = function(e) {
     if (!document.body.classList.contains('moving')) {
-        this.move();
+        this.move(true);
     }
     e.preventDefault();
     e.stopPropagation();
 };
 
-Tile.prototype.move = function() {
+Tile.prototype.move = function(incrementCount) {
     var empty = puzzle.tiles.empty;
+
+    if (incrementCount !== false) {
+        incrementCount = true;
+    }
     
     if (this.canMove()) {
+        if (incrementCount) {
+            puzzle.movesCount++;
+        }
         document.body.classList.add('moving');
         this.originalX = this.x;
         this.originalY = this.y;
@@ -109,8 +128,14 @@ Tile.prototype.move = function() {
         empty.y = this.originalY;
         this.reposition();
     } else if (this.canLineMove('x')) {
+        if (incrementCount) {
+            puzzle.movesCount++;
+        }
         this.lineMove('x', 'y');
     } else if (this.canLineMove('y')) {
+        if (incrementCount) {
+            puzzle.movesCount++;
+        }
         this.lineMove('y', 'x');
     }
 };
@@ -149,7 +174,7 @@ Tile.prototype.lineMove = function(mainAxis, secondaryAxis) {
     tiles.sort(sortTiles.bind(this));
     puzzle.moving = tiles.length;
     tiles.forEach(function(item) {
-        item.move();
+        item.move(false);
     });
 };
 
@@ -191,19 +216,27 @@ Tile.prototype.reposition = function() {
     style.transform = 'translateX(' + peekX + 'px) translateY(' + peekY + 'px)';
 };
 
+puzzle.initVars = function() {
+    puzzle.solved = false;
+    puzzle.movesCount = 0;
+    puzzle.timePaused = null;
+    puzzle.timeSpentPausing = 0;
+    puzzle.timeStarted = (new Date()).getTime();
+};
+
 puzzle.init = function(file) {
     var container = document.createElement('div');
+
     container.id = 'container';
     document.body.appendChild(container);
-
-    puzzle.solved = false;
+    puzzle.initVars();
     puzzle.height = window.innerHeight;
     puzzle.width = window.innerWidth;
     puzzle.createTiles();
 
     document.getElementById('gui').classList.add('hidden');
 
-    if (file.type.split('/')[0] == 'video') {
+    if (file.type.split('/')[0] === 'video') {
         puzzle.img = document.createElement('video');
         puzzle.img.addEventListener("loadeddata", function() {
             puzzle.img.width = puzzle.img.videoWidth;
@@ -216,25 +249,45 @@ puzzle.init = function(file) {
         puzzle.img.loop = true;
         puzzle.redrawCallback = function() {
             requestAnimationFrame(puzzle.redraw.bind(puzzle, false));
-        }
+        };
         puzzle.img.src = window.URL.createObjectURL(file);
-        container.addEventListener('mousedown', puzzle.playPause);
-        container.addEventListener('touchstart', puzzle.playPause);
     } else {
         puzzle.redrawCallback = null;
         puzzle.img = new Image();
         puzzle.img.onload = puzzle.initialDraw;
         puzzle.img.src = window.URL.createObjectURL(file);
     }
+    container.addEventListener('mousedown', puzzle.showPauseScreen);
+    container.addEventListener('touchstart', puzzle.showPauseScreen);
 };
 
-puzzle.playPause = function() {
-    if (puzzle.img.paused) {
-        puzzle.img.play();
-    } else {
+puzzle.showPauseScreen = function(e) {
+    var t;
+    puzzle.timePaused = (new Date()).getTime();
+    t = puzzle.timePaused - puzzle.timeStarted - puzzle.timeSpentPausing;
+
+    if (typeof puzzle.img.pause !== 'undefined') {
         puzzle.img.pause();
     }
-}
+
+    document.getElementById('elapsed').textContent = Math.round(t / 1000);
+    document.getElementById('moves').textContent = puzzle.movesCount;
+    document.getElementById('paused').style.display = 'block';
+    e.preventDefault();
+    e.stopPropagation();
+};
+
+puzzle.hidePauseScreen = function(e) {
+    puzzle.timeSpentPausing += (new Date()).getTime() - puzzle.timePaused;
+
+    if (typeof puzzle.img.play !== 'undefined') {
+        puzzle.img.play();
+    }
+
+    document.getElementById('paused').style.display = 'none';
+    e.preventDefault();
+    e.stopPropagation();
+};
 
 puzzle.initialDraw = function(callback) {
     function transitionEnd(e) {
@@ -269,11 +322,11 @@ puzzle.initCanvas = function() {
     puzzle.canvas = document.createElement('canvas');
     puzzle.canvas.className = 'hidden';
     puzzle.canvas.id = 'finished';
-    puzzle.canvas.addEventListener('mousedown', puzzle.replayCallback);
-    puzzle.canvas.addEventListener('touchstart', puzzle.replayCallback);
+    puzzle.canvas.addEventListener('mousedown', puzzle.newGame);
+    puzzle.canvas.addEventListener('touchstart', puzzle.newGame);
     document.body.appendChild(puzzle.canvas);
     return puzzle.canvas;
-}
+};
 
 puzzle.redraw = function(reposition) {
     document.body.classList.add('moving');
@@ -355,7 +408,7 @@ puzzle.shuffle = function() {
         var available = getAvailableTiles();
         var i = Math.round(Math.random() * (available.length - 1));
         current = available[i];
-        current.move(true);
+        current.move(false);
     }
 };
 
@@ -380,15 +433,35 @@ puzzle.checkSolved = function() {
     }
 };
 
-puzzle.replayCallback = function() {
-    var canvas = document.getElementById('finished');
+puzzle.newGame = function(e) {
     var container = document.getElementById('container');
+    var paused = document.getElementById('paused');
+    paused.style.display = 'none';
     container.parentNode.removeChild(container, true);
-    canvas.parentNode.removeChild(canvas, true);
+    puzzle.canvas.classList.add('hidden');
     if (typeof puzzle.img.pause !== 'undefined') {
         puzzle.img.pause();
     }
+    e.preventDefault();
+    e.stopPropagation();
     showGui();
+};
+
+puzzle.restartGame = function(e) {
+    var paused = document.getElementById('paused');
+    paused.style.display = 'none';
+
+    for (var i = 0; i < puzzle.tiles.length; i++) {
+        for (var j = 0; j < puzzle.tiles[i].length; j++) {
+            var tile = puzzle.tiles[i][j];
+            tile.x = i;
+            tile.y = j;
+        }
+    }
+    puzzle.initVars();
+    puzzle.initialDraw();
+    e.preventDefault();
+    e.stopPropagation();
 };
 
 puzzle.createTiles = function() {

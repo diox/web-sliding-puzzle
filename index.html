@@ -12,21 +12,15 @@
     font-family: sans-serif;
     color: #f6f6f6;
   }
-  body, #container, #finished {
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-  }
   h1 {
-    font: 2.5rem/4.8rem;
+    font-size: 2rem;
     font-weight: bold;
     letter-spacing: -0.05em;
     width: 9em;
     margin-right: auto;
     margin-left: auto;
     padding: 0 1em 0 0;
-    margin: 1.5em auto;
+    margin: 1rem auto 0 auto;
   }
   h1 span {
     background: #333;
@@ -91,24 +85,67 @@
     -webkit-transition: -webkit-transform .1s ease;
     transition: transform .1s ease;
   }
-  #gui {
+  body, #gui, #paused, #container, #finished {
     position: absolute;
-    text-align: center;
     top: 0;
     left: 0;
     height: 100%;
     width: 100%;
-    z-index: 42;
-    background: #111;
+    overflow: hidden;
   }
-  input[type=file] {
-    margin-top: 1em;
+  #gui, #paused, #finished {
+    background: #111;
+    z-index: 42;
+    text-align: center;
+  }
+  #paused {
+    background: rgba(28, 28, 28, 0.75);
+    display: none;
+  }
+  h2 {
+    font-size: 2.5rem;
+    margin: 1.2rem;
+  }
+  dt, dd {
+    display: inline-block;
+    width: 50%;
+    margin: 0;
+    -moz-box-sizing: border-box;
+    -o-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    padding: 0 0.5em;
+  }
+  dt {
+    text-align: right;
+  }
+  dd {
+    text-align: left;
   }
   button, input {
-    padding: 2em;
+    padding: 1.8rem;
+    margin: 1rem 0.1rem;
+  }
+  label {
+    margin-top: 2rem;
+    display: block;
   }
   .hidden {
     display: none !important;
+  }
+  #gui p {
+    margin: 1rem auto;
+    padding: 0;
+  }
+  #reminder {
+    font-size: 75%;
+    width: 100%;
+    position: absolute;
+    bottom: 1rem;
+  }
+  #reminder p {
+    max-width: 15rem;
+    margin: 0 auto;
   }
   </style>
   <script src="sliding.js"></script>
@@ -119,8 +156,28 @@
 <body>
   <form id="gui" class="hidden">
     <h1><span class="s1">Sliding</span><span class="s2">Puzzle</span></h1>
-    <label for="file" id="file_label">Pick an image to start…</label>
-    <br /><input type="file" id="file" size="10" />
+    <p>
+      <label for="file" id="file_label">Pick an image or video to start…</label>
+      <input type="file" id="file" size="10" />
+    </p>
+    <div id="reminder">
+      <p>(When playing, touch the empty space to pause and look at game statistics)</p>
+    </div>
   </form>
+  <div id="paused">
+    <div class="infos">
+      <h2>Game Paused</h2>
+      <dl>
+        <dt>Time elapsed:</dt><dd><span id="elapsed">x</span> seconds </dd>
+      </dl>
+      <dl>
+        <dt>Moves used:</dt><dd><span id="moves">x</span></dd>
+      </dl>
+    </div>
+    <div class="controls">
+      <button id="newgame">New Game</button>
+      <button id="restartgame">Restart Game</button>
+    </div>
+  </div>
 </body>
 </html>
