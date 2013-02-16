@@ -80,6 +80,7 @@
     position: absolute;
     -webkit-transition: -webkit-transform 0.3s ease-out;
     transition: transform 0.3s ease-out;
+    transform: translateX(0) translateY(0);
   }
   .tile.peek {
     -webkit-transition: -webkit-transform .1s ease;
@@ -103,8 +104,11 @@
     display: none;
   }
   h2 {
-    font-size: 2.5rem;
-    margin: 1.2rem;
+    font-size: 2.3rem;
+    margin: 1rem;
+  }
+  dl {
+    margin-top: 2rem;
   }
   dt, dd {
     display: inline-block;
@@ -167,7 +171,8 @@
   <div id="paused">
     <div class="infos">
       <h2>Game Paused</h2>
-      <dl>
+      <p>Touch the screen to resume…</p>
+      <dl style="display: none;"> <!-- time elapsed is buggy when app is unloaded, remove it for now -->
         <dt>Time elapsed:</dt><dd><span id="elapsed">x</span> seconds </dd>
       </dl>
       <dl>

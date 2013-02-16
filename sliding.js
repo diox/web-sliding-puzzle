@@ -7,20 +7,21 @@
 })();
 
 var puzzle = {
-    tilesCount: 4,
-    difficulty: 42,
+    infos: {
+        tilesCount: 4,
+        difficulty: 2,
+        solved: null,
+        timeStarted: null,
+        timePaused: null,
+        timeSpentPausing: null,
+        movesCount: null
+    },
+    tiles: null,
     height: null,
     width: null,
-    tiles: null,
-    image: null,
-    solved: null,
     img: null,
     canvas: null,
     redrawCallback: null,
-    timeStarted: null,
-    timePaused: null,
-    timeSpentPausing: null,
-    movesCount: null
 };
 
 function init() {
@@ -65,17 +66,30 @@ function init() {
             }
         });
     }
+    window.addEventListener('beforeunload', function() {
+        puzzle.showPauseScreen();
+    });
     paused.addEventListener('mousedown', puzzle.hidePauseScreen);
     paused.addEventListener('touchstart', puzzle.hidePauseScreen);
     newgame.addEventListener('mousedown', puzzle.newGame);
     newgame.addEventListener('touchstart', puzzle.newGame);
     restartgame.addEventListener('mousedown', puzzle.restartGame);
     restartgame.addEventListener('touchstart', puzzle.restartGame);
-    showGui();
+    if (typeof localStorage['puzzleInfos'] !== 'undefined' &&
+        typeof localStorage['puzzleSource'] !== 'undefined' &&
+        typeof localStorage['puzzleTiles'] !== 'undefined') {
+        puzzle.resumeGame();
+    } else {
+        showGui();
+    }
 }
 
 function showGui() {
     document.getElementById('gui').classList.remove('hidden');
+}
+
+function hideGui() {
+    document.getElementById('gui').classList.add('hidden');
 }
 
 function Tile(x, y) {
@@ -117,7 +131,7 @@ Tile.prototype.move = function(incrementCount) {
     
     if (this.canMove()) {
         if (incrementCount) {
-            puzzle.movesCount++;
+            puzzle.infos.movesCount++;
         }
         document.body.classList.add('moving');
         this.originalX = this.x;
@@ -129,15 +143,17 @@ Tile.prototype.move = function(incrementCount) {
         this.reposition();
     } else if (this.canLineMove('x')) {
         if (incrementCount) {
-            puzzle.movesCount++;
+            puzzle.infos.movesCount++;
         }
         this.lineMove('x', 'y');
     } else if (this.canLineMove('y')) {
         if (incrementCount) {
-            puzzle.movesCount++;
+            puzzle.infos.movesCount++;
         }
         this.lineMove('y', 'x');
     }
+
+    localStorage['puzzleTiles'] = JSON.stringify(puzzle.tiles);
 };
 
 Tile.prototype.lineMove = function(mainAxis, secondaryAxis) {
@@ -191,57 +207,78 @@ Tile.prototype.canMove = function() {
 };
 
 Tile.prototype.reposition = function() {
+    var x, y, oldX, oldY, peekX, peekY;
+
     function realReposition(e) {
         e.stopPropagation();
         this.classList.remove('peek');
-        style.webkitTransform = 'translateX(' + x + 'px) translateY(' + y + 'px)';
-        style.transform = 'translateX(' + x + 'px) translateY(' + y + 'px)';
+        this.style.webkitTransform = 'translateX(' + x + 'px) translateY(' + y + 'px)';
+        this.style.transform = 'translateX(' + x + 'px) translateY(' + y + 'px)';
         this.removeEventListener('transitionend', realReposition);
         this.removeEventListener('webkitTransitionEnd', realReposition);
     }
 
-    var style = this.elm.style;
-    var x = this.x * (puzzle.width / puzzle.tilesCount);
-    var y = this.y * (puzzle.height / puzzle.tilesCount);
-    this.elm.classList.add('peek');
+    if (this.isEmpty()) {
+        return;
+    }
+
+    x = this.x * (puzzle.width / puzzle.infos.tilesCount);
+    y = this.y * (puzzle.height / puzzle.infos.tilesCount);
     // move 1% in the right direction before doing the real move, to avoid
     // ugly flickering with Firefox OS
     this.elm.addEventListener('transitionend', realReposition);
     this.elm.addEventListener('webkitTransitionEnd', realReposition);
-    var oldX = this.originalX * (puzzle.width / puzzle.tilesCount);
-    var oldY = this.originalY * (puzzle.height / puzzle.tilesCount);
-    var peekX = Math.round(oldX + (x - oldX) / 100);
-    var peekY = Math.round(oldY + (y - oldY) / 100);
-    style.webkitTransform = 'translateX(' + peekX + 'px) translateY(' + peekY + 'px)';
-    style.transform = 'translateX(' + peekX + 'px) translateY(' + peekY + 'px)';
-};
+    oldX = this.originalX * (puzzle.width / puzzle.infos.tilesCount);
+    oldY = this.originalY * (puzzle.height / puzzle.infos.tilesCount);
 
-puzzle.initVars = function() {
-    puzzle.solved = false;
-    puzzle.movesCount = 0;
-    puzzle.timePaused = null;
-    puzzle.timeSpentPausing = 0;
-    puzzle.timeStarted = (new Date()).getTime();
+    peekX = Math.round(oldX + (x - oldX) / 100);
+    peekY = Math.round(oldY + (y - oldY) / 100);
+    this.elm.classList.add('peek');
+    this.elm.offsetLeft; // Force browser to acknowledge it needs to make a transition
+    this.elm.style.webkitTransform = 'translateX(' + peekX + 'px) translateY(' + peekY + 'px)';
+    this.elm.style.transform = 'translateX(' + peekX + 'px) translateY(' + peekY + 'px)';
 };
 
 puzzle.init = function(file) {
+    var fileReader = new FileReader();
+    fileReader.onload = function(e) {
+        // Store file in localStorage to be able to resume game later.
+        // FIXME: refuse files too big ?
+        localStorage['puzzleSource'] = e.target.result;
+    };
+    fileReader.readAsDataURL(file);
+    puzzle.initVars();
+    puzzle.initElements(window.URL.createObjectURL(file), file.type, function() {
+        hideGui();
+        puzzle.shuffle();
+    });
+};
+
+puzzle.initVars = function() {
+    puzzle.infos.solved = false;
+    puzzle.infos.movesCount = 0;
+    puzzle.infos.timePaused = null;
+    puzzle.infos.timeSpentPausing = 0;
+    puzzle.infos.timeStarted = (new Date()).getTime();
+};
+
+puzzle.initElements = function(fileURL, fileType, callback) {
     var container = document.createElement('div');
 
     container.id = 'container';
     document.body.appendChild(container);
-    puzzle.initVars();
     puzzle.height = window.innerHeight;
     puzzle.width = window.innerWidth;
+
     puzzle.createTiles();
 
-    document.getElementById('gui').classList.add('hidden');
-
-    if (file.type.split('/')[0] === 'video') {
+    if (fileType.split('/')[0] === 'video') {
         puzzle.img = document.createElement('video');
         puzzle.img.addEventListener("loadeddata", function() {
             puzzle.img.width = puzzle.img.videoWidth;
             puzzle.img.width = puzzle.img.videoWidth;
             puzzle.initialDraw();
+            callback();
         });
         puzzle.img.autoplay = true;
         puzzle.img.volume = 0;  // muted doesn't seem to be enough for chrome
@@ -250,46 +287,75 @@ puzzle.init = function(file) {
         puzzle.redrawCallback = function() {
             requestAnimationFrame(puzzle.redraw.bind(puzzle, false));
         };
-        puzzle.img.src = window.URL.createObjectURL(file);
+        puzzle.img.src = fileURL;
     } else {
         puzzle.redrawCallback = null;
         puzzle.img = new Image();
-        puzzle.img.onload = puzzle.initialDraw;
-        puzzle.img.src = window.URL.createObjectURL(file);
+        puzzle.img.onload = function() {
+            puzzle.initialDraw();
+            callback();
+        };
+        puzzle.img.src = fileURL;
     }
     container.addEventListener('mousedown', puzzle.showPauseScreen);
     container.addEventListener('touchstart', puzzle.showPauseScreen);
 };
 
+puzzle.resumeGame = function() {
+    var puzzleInfos = JSON.parse(localStorage['puzzleInfos']);
+    var puzzleTiles = JSON.parse(localStorage['puzzleTiles']);
+    var start, end, fileType, fileURL;
+    // FIXME: refactor w/ init()
+    puzzle.initVars();
+    fileURL = localStorage['puzzleSource']
+    start = fileURL.indexOf(':') + 1;
+    end = fileURL.indexOf(';');
+    fileType = fileURL.slice(start, end);
+    puzzle.initElements(fileURL, fileType, function() {
+        puzzle.infos = puzzleInfos;
+        puzzle.infos.timeSpentPausing += (new Date()).getTime() - puzzle.infos.timePaused;
+        for (var i = 0; i < puzzleTiles.length; i++) {
+            for (var j = 0; j < puzzleTiles[i].length; j++) {
+                puzzle.tiles[i][j].x = puzzleTiles[i][j].x;
+                puzzle.tiles[i][j].y = puzzleTiles[i][j].y;
+                puzzle.tiles[i][j].reposition();
+            }
+        }
+        hideGui();
+    });
+};
+
 puzzle.showPauseScreen = function(e) {
     var t;
-    puzzle.timePaused = (new Date()).getTime();
-    t = puzzle.timePaused - puzzle.timeStarted - puzzle.timeSpentPausing;
+    puzzle.infos.timePaused = (new Date()).getTime();
+    t = puzzle.infos.timePaused - puzzle.infos.timeStarted - puzzle.infos.timeSpentPausing;
 
     if (typeof puzzle.img.pause !== 'undefined') {
         puzzle.img.pause();
     }
 
+    localStorage['puzzleInfos'] = JSON.stringify(puzzle.infos);
     document.getElementById('elapsed').textContent = Math.round(t / 1000);
-    document.getElementById('moves').textContent = puzzle.movesCount;
+    document.getElementById('moves').textContent = puzzle.infos.movesCount;
     document.getElementById('paused').style.display = 'block';
     e.preventDefault();
     e.stopPropagation();
 };
 
 puzzle.hidePauseScreen = function(e) {
-    puzzle.timeSpentPausing += (new Date()).getTime() - puzzle.timePaused;
+    puzzle.infos.timeSpentPausing += (new Date()).getTime() - puzzle.infos.timePaused;
 
     if (typeof puzzle.img.play !== 'undefined') {
         puzzle.img.play();
     }
 
+    localStorage['puzzleInfos'] = JSON.stringify(puzzle.infos);
     document.getElementById('paused').style.display = 'none';
     e.preventDefault();
     e.stopPropagation();
 };
 
-puzzle.initialDraw = function(callback) {
+puzzle.initialDraw = function() {
     function transitionEnd(e) {
         if (e.target.tagName.toLowerCase() !== 'canvas') {
             return;
@@ -304,7 +370,6 @@ puzzle.initialDraw = function(callback) {
     }
     puzzle.initCanvas();
     puzzle.redraw(true);
-    puzzle.shuffle();
     puzzle.moving = 0;
     document.body.addEventListener('transitionend', transitionEnd);
     document.body.addEventListener('webkitTransitionEnd', transitionEnd);
@@ -365,12 +430,12 @@ puzzle.redraw = function(reposition) {
             }
             var tile = puzzle.tiles[i][j];
             var elm = tile.elm;
-            elm.width = puzzle.width / puzzle.tilesCount;
-            elm.height = puzzle.height / puzzle.tilesCount;
-            var sx = i * puzzle.width / puzzle.tilesCount;
-            var sy = j * puzzle.height / puzzle.tilesCount;
-            var sw = canvas.width / puzzle.tilesCount;
-            var sh = canvas.height / puzzle.tilesCount;
+            elm.width = puzzle.width / puzzle.infos.tilesCount;
+            elm.height = puzzle.height / puzzle.infos.tilesCount;
+            var sx = i * puzzle.width / puzzle.infos.tilesCount;
+            var sy = j * puzzle.height / puzzle.infos.tilesCount;
+            var sw = canvas.width / puzzle.infos.tilesCount;
+            var sh = canvas.height / puzzle.infos.tilesCount;
             var dx = 0;
             var dy = 0;
             var dw = elm.width;
@@ -389,8 +454,9 @@ puzzle.redraw = function(reposition) {
     }
 };
 
-puzzle.shuffle = function() {
+puzzle.shuffle = function(difficulty) {
     var current = null;
+    var movesToMake = difficulty || puzzle.infos.difficulty;
 
     function getAvailableTiles() {
         var availableTiles = [];
@@ -404,16 +470,17 @@ puzzle.shuffle = function() {
         }
         return availableTiles;
     }
-    for (var d = 0; d < puzzle.difficulty; d++) {
+    for (var d = 0; d < movesToMake; d++) {
         var available = getAvailableTiles();
         var i = Math.round(Math.random() * (available.length - 1));
         current = available[i];
         current.move(false);
     }
+    localStorage['puzzleInfos'] = JSON.stringify(puzzle.infos);
 };
 
 puzzle.checkSolved = function() {
-    if (puzzle.solved) {
+    if (puzzle.infos.solved) {
         return;
     }
     var solved = true;
@@ -427,13 +494,21 @@ puzzle.checkSolved = function() {
         }
     }
     if (solved) {
+        puzzle.resetStorage();
         document.getElementById('finished').classList.remove('hidden');
         alert('Congratulations! Tap the image to play again');
-        puzzle.solved = solved;
+        puzzle.infos.solved = solved;
     }
 };
 
+puzzle.resetStorage = function() {
+    delete localStorage['puzzleInfos'];
+    delete localStorage['puzzleSource'];
+    delete localStorage['puzzleTiles'];
+};
+
 puzzle.newGame = function(e) {
+    puzzle.resetStorage();
     var container = document.getElementById('container');
     var paused = document.getElementById('paused');
     paused.style.display = 'none';
@@ -460,6 +535,7 @@ puzzle.restartGame = function(e) {
     }
     puzzle.initVars();
     puzzle.initialDraw();
+    puzzle.shuffle();
     e.preventDefault();
     e.stopPropagation();
 };
@@ -467,11 +543,11 @@ puzzle.restartGame = function(e) {
 puzzle.createTiles = function() {
     var container = document.getElementById('container');
 
-    puzzle.tiles = new Array(puzzle.tilesCount);
-    puzzle.tiles.empty = new Tile(puzzle.tilesCount - 1, puzzle.tilesCount - 1);
-    for (var i = 0; i < puzzle.tilesCount; i++) {
-        puzzle.tiles[i] = new Array(puzzle.tilesCount);
-        for (var j = 0; j < puzzle.tilesCount; j++) {
+    puzzle.tiles = new Array(puzzle.infos.tilesCount);
+    puzzle.tiles.empty = new Tile(puzzle.infos.tilesCount - 1, puzzle.infos.tilesCount - 1);
+    for (var i = 0; i < puzzle.infos.tilesCount; i++) {
+        puzzle.tiles[i] = new Array(puzzle.infos.tilesCount);
+        for (var j = 0; j < puzzle.infos.tilesCount; j++) {
             if (i === puzzle.tiles.empty.x && j === puzzle.tiles.empty.y) {
                 puzzle.tiles[i][j] = puzzle.tiles.empty;
             } else {
