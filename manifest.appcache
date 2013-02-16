@@ -1,0 +1,12 @@
+CACHE MANIFEST
+#v0.1
+
+CACHE:
+index.html
+sliding.js
+
+# catch-all for anything else
+NETWORK:
+*
+http://*
+https://*
