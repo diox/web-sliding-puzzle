@@ -1,15 +1,19 @@
 {
+  "version": "0.1",
   "name": "Sliding Puzzle",
-  "description": "A simple Sliding puzzle game",
+  "description": "A simple sliding puzzle (taquin) game.",
   "launch_path": "/index.html",
+  "fullscreen": "true",
+  "orientation": ["portrait"],
   "icons": {
-    "60": "/icon-60.png"
+    "60": "/icon-60.png",
+    "128": "/icon-128.png"
   },
   "developer": {
     "name": "Mathieu Pillard",
     "url": "http://virgule.net/"
   },
-  "default_locale": "en",
-  "orientation": "portrait-primary",
-  "fullscreen": "true"
+  "installs_allowed_from": ["*"],
+  "appcache_path": "/manifest.appcache",
+  "default_locale": "en"
 }
