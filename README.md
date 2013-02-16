@@ -1,12 +1,11 @@
-The Sliding Puzzle Game I made during and for the Firefox OS App days in Paris.
+Web Sliding Puzzle
+==================
 
-It should work fine most mobile and desktop browsers (except Opera for some 
-reason I haven't looked into yet), including Firefox, Safari and Chrome on all
-platforms.
+Sliding Puzzle is a simple web app originally made during and for the Firefox OS
+App days in Paris.
 
-If for some reason you'd like to test in the Firefox OS simulator, don't use the
-stable version, it has some issues  preventing transitions to work properly. 
-It was tested and working on the unstable version, as well as real Firefox OS
-devices.
+It should work fine most modern mobile and desktop browsers (except Opera 
+because its support File API is incomplete). It was tested on latest versions of
+Firefox, Safari and Chrome on all platforms.
 
-You can see a demo over at http://virgule.net/sliding-puzzle/
+You can see it in action at this URL : http://virgule.net/sliding-puzzle/
