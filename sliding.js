@@ -16,6 +16,7 @@ var puzzle = {
         timeSpentPausing: null,
         movesCount: null
     },
+    tilesElements: null,
     tiles: null,
     height: null,
     width: null,
@@ -110,21 +111,12 @@ function Tile(x, y) {
     this.y = y;
     this.originalX = x;
     this.originalY = y;
-    this.elm = null;
+    this.id = "c_" + (x * puzzle.infos.tilesCount + y);
 }
 
 Tile.prototype.isEmpty = function() {
     // FIXME: use everywhere
     return (this === puzzle.tiles.empty);
-};
-
-Tile.prototype.debug = function(delay) {
-    setTimeout((function() {
-        if (this.elm) {
-            this.elm.style.opacity = '0.5';
-            this.elm.style.outline = '1px dashed yellow';
-        }
-    }).bind(this), delay || 20);
 };
 
 Tile.prototype.eventHandler = function(e) {
@@ -220,36 +212,37 @@ Tile.prototype.canMove = function() {
 };
 
 Tile.prototype.reposition = function() {
-    var x, y, oldX, oldY, peekX, peekY;
+    var x, y, oldX, oldY, peekX, peekY, elm;
 
     function realReposition(e) {
         e.stopPropagation();
-        this.classList.remove('peek');
-        this.style.webkitTransform = 'translateX(' + x + 'px) translateY(' + y + 'px)';
-        this.style.transform = 'translateX(' + x + 'px) translateY(' + y + 'px)';
-        this.removeEventListener('transitionend', realReposition);
-        this.removeEventListener('webkitTransitionEnd', realReposition);
+        elm.classList.remove('peek');
+        elm.style.webkitTransform = 'translateX(' + x + 'px) translateY(' + y + 'px)';
+        elm.style.transform = 'translateX(' + x + 'px) translateY(' + y + 'px)';
+        elm.removeEventListener('transitionend', realReposition);
+        elm.removeEventListener('webkitTransitionEnd', realReposition);
     }
 
     if (this.isEmpty()) {
         return;
     }
 
+    elm = puzzle.tilesElements[this.id];
     x = this.x * (puzzle.width / puzzle.infos.tilesCount);
     y = this.y * (puzzle.height / puzzle.infos.tilesCount);
     // move 1% in the right direction before doing the real move, to avoid
     // ugly flickering with Firefox OS
-    this.elm.addEventListener('transitionend', realReposition);
-    this.elm.addEventListener('webkitTransitionEnd', realReposition);
+    elm.addEventListener('transitionend', realReposition);
+    elm.addEventListener('webkitTransitionEnd', realReposition);
     oldX = this.originalX * (puzzle.width / puzzle.infos.tilesCount);
     oldY = this.originalY * (puzzle.height / puzzle.infos.tilesCount);
 
     peekX = Math.round(oldX + (x - oldX) / 100);
     peekY = Math.round(oldY + (y - oldY) / 100);
-    this.elm.classList.add('peek');
-    this.elm.offsetLeft; // Force browser to acknowledge it needs to make a transition
-    this.elm.style.webkitTransform = 'translateX(' + peekX + 'px) translateY(' + peekY + 'px)';
-    this.elm.style.transform = 'translateX(' + peekX + 'px) translateY(' + peekY + 'px)';
+    elm.classList.add('peek');
+    elm.offsetLeft; // Force browser to acknowledge it needs to make a transition
+    elm.style.webkitTransform = 'translateX(' + peekX + 'px) translateY(' + peekY + 'px)';
+    elm.style.transform = 'translateX(' + peekX + 'px) translateY(' + peekY + 'px)';
 };
 
 puzzle.init = function(file) {
@@ -444,7 +437,7 @@ puzzle.redraw = function(reposition) {
                 continue;
             }
             var tile = puzzle.tiles[i][j];
-            var elm = tile.elm;
+            var elm = puzzle.tilesElements[tile.id];
             elm.width = puzzle.width / puzzle.infos.tilesCount;
             elm.height = puzzle.height / puzzle.infos.tilesCount;
             var sx = i * puzzle.width / puzzle.infos.tilesCount;
@@ -557,8 +550,10 @@ puzzle.restartGame = function(e) {
 
 puzzle.createTiles = function() {
     var container = document.getElementById('container');
+    var tile, elm;
 
     puzzle.tiles = new Array(puzzle.infos.tilesCount);
+    puzzle.tilesElements = {};
     puzzle.tiles.empty = new Tile(puzzle.infos.tilesCount - 1, puzzle.infos.tilesCount - 1);
     for (var i = 0; i < puzzle.infos.tilesCount; i++) {
         puzzle.tiles[i] = new Array(puzzle.infos.tilesCount);
@@ -566,15 +561,16 @@ puzzle.createTiles = function() {
             if (i === puzzle.tiles.empty.x && j === puzzle.tiles.empty.y) {
                 puzzle.tiles[i][j] = puzzle.tiles.empty;
             } else {
-                var tile = new Tile(i, j);
-                puzzle.tiles[i][j] = tile;
-                if (!tile.elm) {
-                    tile.elm = document.createElement('canvas');
-                }
-                tile.elm.className = 'tile';
-                tile.elm.addEventListener('touchstart', tile.eventHandler.bind(tile));
-                tile.elm.addEventListener('mousedown', tile.eventHandler.bind(tile));
-                container.appendChild(tile.elm);
+                tile = new Tile(i, j);
+                elm = document.createElement('canvas');
+                elm.className = 'tile';
+                elm.id = tile.id;
+                elm.addEventListener('touchstart', tile.eventHandler.bind(tile));
+                elm.addEventListener('mousedown', tile.eventHandler.bind(tile));
+                container.appendChild(elm);
+
+                puzzle.tiles[i][j] = tile
+                puzzle.tilesElements[elm.id] = elm;
             }    
         }
     }
