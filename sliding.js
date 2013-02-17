@@ -9,7 +9,7 @@
 var puzzle = {
     infos: {
         tilesCount: 4,
-        difficulty: 2,
+        difficulty: 42,
         solved: null,
         timeStarted: null,
         timePaused: null,
