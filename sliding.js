@@ -8,8 +8,8 @@
 
 var puzzle = {
     infos: {
-        tilesCount: 4,
-        difficulty: 42,
+        tilesCount: null,
+        difficulty: null,
         solved: null,
         timeStarted: null,
         timePaused: null,
@@ -269,6 +269,8 @@ puzzle.init = function(file) {
 
 puzzle.initVars = function() {
     puzzle.infos.solved = false;
+    puzzle.infos.tilesCount = 4;
+    puzzle.infos.difficulty = 42;
     puzzle.infos.movesCount = 0;
     puzzle.infos.timePaused = null;
     puzzle.infos.timeSpentPausing = 0;
