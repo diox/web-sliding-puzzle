@@ -32,18 +32,9 @@ function init() {
     var newgame = document.getElementById('newgame');
     var restartgame = document.getElementById('restartgame');
 
-    if (elm.type !== 'file' || 0) {
-        /* For browsers without input=file, i.e. Firefox OS, we show the 
-           Web Activities "pick", restricting to images.
-
-           We should probably do the test the other way around, testing
-           MozActivity presence first, so that browsers without input=file
-           and without MozActvity don't throw errors, but testing for
-           MozActivity presence doesn't garantee us it will work to pick images.
-           ('MozActivity' in window is true in FF Desktop, but unusable, and we
-            can only know that too late in the process, after the user has
-            already clicked the button)
-        */
+    if ('MozActivity' in window) {
+        /* For browsers with Web Activities, i.e. Firefox OS, we show the
+           Web Activities "pick", restricting to images. */
         elm.type = "button";
         elm.value = label.textContent;
         elm.addEventListener('click', function(e) {
@@ -61,6 +52,7 @@ function init() {
         });
         label.style.display = 'none';
     } else {
+        /* The other browsers get the standard <input type=file> */
         elm.addEventListener('change', function() {
             if (this.files.length) {
                 puzzle.init(this.files[0]);
